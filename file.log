@@ -1,0 +1,103 @@
+2024-12-14 19:02:36,428|DEBUG|tensorflow|Falling back to TensorFlow client; we recommended you install the Cloud TPU client directly with pip install cloud-tpu-client.
+2024-12-14 19:02:37,280|DEBUG|h5py._conv|Creating converter from 7 to 5
+2024-12-14 19:02:37,280|DEBUG|h5py._conv|Creating converter from 5 to 7
+2024-12-14 19:02:37,280|DEBUG|h5py._conv|Creating converter from 7 to 5
+2024-12-14 19:02:37,280|DEBUG|h5py._conv|Creating converter from 5 to 7
+2024-12-14 19:02:38,623|DEBUG|matplotlib|matplotlib data path: C:\Users\tyler\AppData\Local\Programs\Python\Python310\lib\site-packages\matplotlib\mpl-data
+2024-12-14 19:02:38,631|DEBUG|matplotlib|CONFIGDIR=C:\Users\tyler\.matplotlib
+2024-12-14 19:02:38,633|DEBUG|matplotlib|interactive is False
+2024-12-14 19:02:38,634|DEBUG|matplotlib|platform is win32
+2024-12-14 19:02:38,671|DEBUG|matplotlib|CACHEDIR=C:\Users\tyler\.matplotlib
+2024-12-14 19:02:38,676|DEBUG|matplotlib.font_manager|Using fontManager instance from C:\Users\tyler\.matplotlib\fontlist-v390.json
+2024-12-14 19:02:42,665|DEBUG|envs.tictactoe_env|
+
+---- NEW GAME ----
+2024-12-14 19:02:42,665|DEBUG|__main__|Agent plays as player 1
+2024-12-14 19:02:42,665|DEBUG|envs.tictactoe_env|
+2024-12-14 19:02:42,665|DEBUG|envs.tictactoe_env|It is Player 1's turn to move
+2024-12-14 19:02:42,665|DEBUG|envs.tictactoe_env|. . .
+2024-12-14 19:02:42,665|DEBUG|envs.tictactoe_env|. . .
+2024-12-14 19:02:42,665|DEBUG|envs.tictactoe_env|. . .
+2024-12-14 19:02:42,665|DEBUG|envs.tictactoe_env|
+Legal actions: [0, 1, 2, 3, 4, 5, 6, 7, 8]
+2024-12-14 19:02:42,670|DEBUG|__main__|Agent thinks it has a 93.88% chance of winning
+2024-12-14 19:02:42,671|DEBUG|__main__|Top 5 actions: ['4: 0.281', '6: 0.206', '1: 0.140', '5: 0.125', '8: 0.083']
+2024-12-14 19:02:42,671|DEBUG|__main__|Player 1 plays action 5
+2024-12-14 19:02:42,671|DEBUG|envs.tictactoe_env|
+2024-12-14 19:02:42,671|DEBUG|envs.tictactoe_env|It is Player 2's turn to move
+2024-12-14 19:02:42,671|DEBUG|envs.tictactoe_env|. . .
+2024-12-14 19:02:42,671|DEBUG|envs.tictactoe_env|. . X
+2024-12-14 19:02:42,671|DEBUG|envs.tictactoe_env|. . .
+2024-12-14 19:02:42,672|DEBUG|envs.tictactoe_env|
+Legal actions: [0, 1, 2, 3, 4, 6, 7, 8]
+2024-12-14 19:02:42,672|DEBUG|__main__|Player 2 plays action 3
+2024-12-14 19:02:42,672|DEBUG|envs.tictactoe_env|
+2024-12-14 19:02:42,672|DEBUG|envs.tictactoe_env|It is Player 1's turn to move
+2024-12-14 19:02:42,672|DEBUG|envs.tictactoe_env|. . .
+2024-12-14 19:02:42,672|DEBUG|envs.tictactoe_env|O . X
+2024-12-14 19:02:42,672|DEBUG|envs.tictactoe_env|. . .
+2024-12-14 19:02:42,672|DEBUG|envs.tictactoe_env|
+Legal actions: [0, 1, 2, 4, 6, 7, 8]
+2024-12-14 19:02:42,677|DEBUG|__main__|Agent thinks it has a 96.08% chance of winning
+2024-12-14 19:02:42,678|DEBUG|__main__|Top 5 actions: ['7: 0.328', '8: 0.231', '0: 0.189', '2: 0.127', '6: 0.083']
+2024-12-14 19:02:42,678|DEBUG|__main__|Player 1 plays action 7
+2024-12-14 19:02:42,678|DEBUG|envs.tictactoe_env|
+2024-12-14 19:02:42,678|DEBUG|envs.tictactoe_env|It is Player 2's turn to move
+2024-12-14 19:02:42,678|DEBUG|envs.tictactoe_env|. . .
+2024-12-14 19:02:42,678|DEBUG|envs.tictactoe_env|O . X
+2024-12-14 19:02:42,678|DEBUG|envs.tictactoe_env|. X .
+2024-12-14 19:02:42,679|DEBUG|envs.tictactoe_env|
+Legal actions: [0, 1, 2, 4, 6, 8]
+2024-12-14 19:02:42,679|DEBUG|__main__|Player 2 plays action 8
+2024-12-14 19:02:42,679|DEBUG|envs.tictactoe_env|
+2024-12-14 19:02:42,679|DEBUG|envs.tictactoe_env|It is Player 1's turn to move
+2024-12-14 19:02:42,679|DEBUG|envs.tictactoe_env|. . .
+2024-12-14 19:02:42,679|DEBUG|envs.tictactoe_env|O . X
+2024-12-14 19:02:42,679|DEBUG|envs.tictactoe_env|. X O
+2024-12-14 19:02:42,679|DEBUG|envs.tictactoe_env|
+Legal actions: [0, 1, 2, 4, 6]
+2024-12-14 19:02:42,684|DEBUG|__main__|Agent thinks it has a 96.82% chance of winning
+2024-12-14 19:02:42,684|DEBUG|__main__|Top 5 actions: ['2: 0.580', '0: 0.159', '4: 0.119', '6: 0.112', '1: 0.027']
+2024-12-14 19:02:42,684|DEBUG|__main__|Player 1 plays action 2
+2024-12-14 19:02:42,684|DEBUG|envs.tictactoe_env|
+2024-12-14 19:02:42,684|DEBUG|envs.tictactoe_env|It is Player 2's turn to move
+2024-12-14 19:02:42,684|DEBUG|envs.tictactoe_env|. . X
+2024-12-14 19:02:42,684|DEBUG|envs.tictactoe_env|O . X
+2024-12-14 19:02:42,685|DEBUG|envs.tictactoe_env|. X O
+2024-12-14 19:02:42,685|DEBUG|envs.tictactoe_env|
+Legal actions: [0, 1, 4, 6]
+2024-12-14 19:02:42,685|DEBUG|__main__|Player 2 plays action 1
+2024-12-14 19:02:42,686|DEBUG|envs.tictactoe_env|
+2024-12-14 19:02:42,686|DEBUG|envs.tictactoe_env|It is Player 1's turn to move
+2024-12-14 19:02:42,686|DEBUG|envs.tictactoe_env|. O X
+2024-12-14 19:02:42,686|DEBUG|envs.tictactoe_env|O . X
+2024-12-14 19:02:42,686|DEBUG|envs.tictactoe_env|. X O
+2024-12-14 19:02:42,686|DEBUG|envs.tictactoe_env|
+Legal actions: [0, 4, 6]
+2024-12-14 19:02:42,690|DEBUG|__main__|Agent thinks it has a 95.50% chance of winning
+2024-12-14 19:02:42,690|DEBUG|__main__|Top 5 actions: ['4: 0.359', '0: 0.356', '6: 0.284', '1: 0.0', '2: 0.0']
+2024-12-14 19:02:42,690|DEBUG|__main__|Player 1 plays action 0
+2024-12-14 19:02:42,690|DEBUG|envs.tictactoe_env|
+2024-12-14 19:02:42,690|DEBUG|envs.tictactoe_env|It is Player 2's turn to move
+2024-12-14 19:02:42,690|DEBUG|envs.tictactoe_env|X O X
+2024-12-14 19:02:42,690|DEBUG|envs.tictactoe_env|O . X
+2024-12-14 19:02:42,691|DEBUG|envs.tictactoe_env|. X O
+2024-12-14 19:02:42,691|DEBUG|envs.tictactoe_env|
+Legal actions: [4, 6]
+2024-12-14 19:02:42,691|DEBUG|__main__|Player 2 plays action 6
+2024-12-14 19:02:42,691|DEBUG|envs.tictactoe_env|
+2024-12-14 19:02:42,691|DEBUG|envs.tictactoe_env|It is Player 1's turn to move
+2024-12-14 19:02:42,691|DEBUG|envs.tictactoe_env|X O X
+2024-12-14 19:02:42,692|DEBUG|envs.tictactoe_env|O . X
+2024-12-14 19:02:42,692|DEBUG|envs.tictactoe_env|O X O
+2024-12-14 19:02:42,692|DEBUG|envs.tictactoe_env|
+Legal actions: [4]
+2024-12-14 19:02:42,697|DEBUG|__main__|Agent thinks it has a 90.82% chance of winning
+2024-12-14 19:02:42,698|DEBUG|__main__|Top 5 actions: ['4: 1.0', '0: 0.0', '1: 0.0', '2: 0.0', '3: 0.0']
+2024-12-14 19:02:42,698|DEBUG|__main__|Player 1 plays action 4
+2024-12-14 19:02:42,698|DEBUG|envs.tictactoe_env|Board full
+2024-12-14 19:02:42,698|DEBUG|envs.tictactoe_env|
+2024-12-14 19:02:42,698|DEBUG|envs.tictactoe_env|GAME OVER
+2024-12-14 19:02:42,698|DEBUG|envs.tictactoe_env|X O X
+2024-12-14 19:02:42,698|DEBUG|envs.tictactoe_env|O X X
+2024-12-14 19:02:42,698|DEBUG|envs.tictactoe_env|O X O
