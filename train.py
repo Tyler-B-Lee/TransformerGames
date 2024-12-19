@@ -9,7 +9,7 @@ import time
 from stable_baselines3 import PPO
 from stable_baselines3.common.callbacks import EvalCallback
 from stable_baselines3.common.utils import set_random_seed
-from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv
+from stable_baselines3.common.env_util import make_vec_env
 import config
 
 
@@ -44,8 +44,8 @@ def main(args):
 
   logger.info('\nSetting up the selfplay training environment opponents...')
   base_env = get_environment(args.env_name)
-  env = SubprocVecEnv([lambda: selfplay_wrapper(base_env)(opponent_type=args.opponent_type, verbose=args.verbose)] * args.num_envs)
-  env.seed(workerseed)
+  env_kwargs = {'verbose': args.verbose, 'opponent_type': args.opponent_type}
+  training_environment = make_vec_env(selfplay_wrapper(base_env), n_envs=args.num_envs, seed=workerseed, env_kwargs=env_kwargs)
 
   params = {'gamma':args.gamma
     , 'n_steps':args.timesteps_per_actorbatch
@@ -58,19 +58,19 @@ def main(args):
     , 'tensorboard_log':config.LOGDIR
   }
 
-  time.sleep(5) # allow time for the base model to be saved out when the environment is created
+  time.sleep(10) # allow time for the base model to be saved out when the environment is created
 
   if args.reset or not os.path.exists(os.path.join(model_dir, 'best_model.zip')):
     logger.info('\nLoading the base PPO agent to train...')
-    model = PPO.load(os.path.join(model_dir, 'base.zip'), env, **params)
+    model = PPO.load(os.path.join(model_dir, 'base.zip'), training_environment, **params)
   else:
     logger.info('\nLoading the best_model.zip PPO agent to continue training...')
-    model = PPO.load(os.path.join(model_dir, 'best_model.zip'), env, **params)
+    model = PPO.load(os.path.join(model_dir, 'best_model.zip'), training_environment, **params)
 
   #Callbacks
   logger.info('\nSetting up the selfplay evaluation environment opponents...')
   callback_args = {
-    'eval_env': SubprocVecEnv([lambda: selfplay_wrapper(base_env)(opponent_type=args.opponent_type, verbose=args.verbose)]),
+    'eval_env': make_vec_env(selfplay_wrapper(base_env), n_envs=1, seed=workerseed, env_kwargs=env_kwargs),
     'best_model_save_path' : config.TMPMODELDIR,
     'log_path' : config.LOGDIR,
     'eval_freq' : args.eval_freq,
@@ -80,18 +80,18 @@ def main(args):
     'verbose' : 0
   }
 
-  if args.rules:  
-    logger.info('\nSetting up the evaluation environment against the rules-based agent...')
-    # Evaluate against a 'rules' agent as well
-    eval_actual_callback = EvalCallback(
-      eval_env=SubprocVecEnv([lambda: selfplay_wrapper(base_env)(opponent_type='rules', verbose=args.verbose)]),
-      eval_freq=1,
-      n_eval_episodes=args.n_eval_episodes,
-      deterministic = args.best,
-      render = True,
-      verbose = 0
-    )
-    callback_args['callback_on_new_best'] = eval_actual_callback
+  # if args.rules:  
+  #   logger.info('\nSetting up the evaluation environment against the rules-based agent...')
+  #   # Evaluate against a 'rules' agent as well
+  #   eval_actual_callback = EvalCallback(
+  #     eval_env=SubprocVecEnv([lambda: selfplay_wrapper(base_env)(opponent_type='rules', verbose=args.verbose)]),
+  #     eval_freq=1,
+  #     n_eval_episodes=args.n_eval_episodes,
+  #     deterministic = args.best,
+  #     render = True,
+  #     verbose = 0
+  #   )
+  #   callback_args['callback_on_new_best'] = eval_actual_callback
     
   # Evaluate the agent against previous versions
   eval_callback = SelfPlayCallback(args.opponent_type, args.threshold, args.env_name, **callback_args)
@@ -100,10 +100,10 @@ def main(args):
 
   model.learn(total_timesteps=int(1e9), callback=[eval_callback], reset_num_timesteps = False, tb_log_name="tb")
 
-  env.close()
-  del env
+  training_environment.close()
+  del training_environment
 
-# python train.py -e tictactoe -ef 2000 -ne 300 -tpa 200 -ob 200
+# python train.py -e tictactoe -o random -ef 2000 -ne 300 -tpa 200 -ob 200
 
 def cli() -> None:
   """Handles argument extraction from CLI and passing to main().

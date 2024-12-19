@@ -55,7 +55,7 @@ class Agent():
       action = np.argmax(action_probs)
       logger.debug(f'Best action {action}')
 
-      if not choose_best_action and self.name != 'random':
+      if not choose_best_action:
           action = sample_action(action_probs)
           logger.debug(f'Sampled action {action} chosen')
 

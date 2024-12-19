@@ -33,23 +33,34 @@ class TicTacToeEnv(gym.Env):
         self.grid_shape = (self.grid_length, self.grid_length)
         self.action_space = gym.spaces.Discrete(self.num_squares)
         self.observation_space = gym.spaces.Box(low=0, high=1, shape=(self.num_squares * 2 + self.num_squares,))
+        # self.observation_space = gym.spaces.Box(low=-1, high=1, shape=(self.num_squares + self.num_squares,))
         self.verbose = verbose
         
 
     @property
     def observation(self):
         position = []
-        for square in self.board:
-            if square.number == 0:
+        for token in self.board:
+            # add each square as a one-hot encoded vector
+            # 1 in index 0 for the current player, 1 in index 1 for the other player
+            if token.number == 0:
                 position.extend([0, 0])
+            elif token.number == self.current_player.token.number:
+                position.extend([1, 0])
             else:
-                # add each square as a one-hot encoded vector
-                # 1 in index 0 for the current player, 1 in index 1 for the other player
-                friendly = 1 if square.number == self.current_player.token.number else 0
-                position.extend([friendly, 1 - friendly])
+                position.extend([0, 1])
         position = torch.tensor(position, dtype=torch.float32)
         # combine position with legal actions
         return torch.cat([position, self.legal_actions])
+
+    # @property
+    # def observation(self):
+    #     if self.players[self.current_player_num].token.number == 1:
+    #         position = torch.tensor([x.number for x in self.board], dtype=torch.float32)
+    #     else:
+    #         position = torch.tensor([-x.number for x in self.board], dtype=torch.float32)
+
+    #     return torch.cat([position, self.legal_actions])
 
     @property
     def legal_actions(self):
@@ -247,3 +258,17 @@ def testForkMove(b, mark, i):
         if testWinMove(bCopy, mark, j) and bCopy[j] == 0:
             winningMoves += 1
     return winningMoves >= 2
+
+if __name__ == "__main__":
+    # Test the environment's observation method over a game
+    env = TicTacToeEnv()
+    obs, _ = env.reset()
+    done = False
+    env.render()
+    while not done:
+        dist = env.rules_move()
+        action = np.random.choice(len(dist), p = dist)
+        obs, reward, done, _, _ = env.step(action)
+        env.render()
+        print(f"Observation: {obs}")
+        print(f"Reward: {reward}")

@@ -13,13 +13,13 @@ OBS_LENGTH = 18
 TOKEN_LENGTH = 2
 ACTIONS = 9
 
-TRANSFORMER_FEATURE_SIZE = 32
+TRANSFORMER_FEATURE_SIZE = 256
 TRANSFORMER_FF_DIM = 256
 TRANSFORMER_NHEAD = 8
-TRANSFORMER_NUM_LAYERS = 2
+TRANSFORMER_NUM_LAYERS = 8
 
-POLICY_FEATURE_SIZE = 16
-VALUE_FEATURE_SIZE = 16
+POLICY_FEATURE_SIZE = 64
+VALUE_FEATURE_SIZE = 64
 
 COMPUTE_DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -123,7 +123,7 @@ class MultiHeadAttentionLayer(nn.Module):
         return x
 
 
-class TransformerEncoderLayer(nn.Module):
+class MyTransformerEncoder(nn.Module):
     def __init__(self, hid_dim, n_heads, pf_dim, dropout, device):
         super().__init__()
         
@@ -180,16 +180,16 @@ class CustomTransformerExtractor(nn.Module):
     def __init__(self, input_dim) -> None:
         super().__init__()
         self.embedding = nn.Linear(input_dim, TRANSFORMER_FEATURE_SIZE)
-        self.layers = nn.ModuleList([TransformerEncoderLayer(TRANSFORMER_FEATURE_SIZE, TRANSFORMER_NHEAD, TRANSFORMER_FF_DIM, 0.1, COMPUTE_DEVICE) for _ in range(TRANSFORMER_NUM_LAYERS)])
-        self.fc = nn.Linear(TRANSFORMER_FEATURE_SIZE, TRANSFORMER_FEATURE_SIZE)
-        self.pooling = nn.AdaptiveAvgPool1d(1)
+        self.layers = nn.ModuleList([MyTransformerEncoder(TRANSFORMER_FEATURE_SIZE, TRANSFORMER_NHEAD, TRANSFORMER_FF_DIM, 0.1, COMPUTE_DEVICE) for _ in range(TRANSFORMER_NUM_LAYERS)])
+        # self.fc = nn.Linear(TRANSFORMER_FEATURE_SIZE, TRANSFORMER_FEATURE_SIZE)
+        # self.pooling = nn.AdaptiveAvgPool1d(1)
 
     def forward(self, x):
         x = self.embedding(x)
         for layer in self.layers:
             x = layer(x, None)
-        x = self.fc(x)
-        x = self.pooling(x.permute(0, 2, 1)).squeeze(2)
+        # x = self.fc(x)
+        x = x.mean(dim=1)
         return x
 
 
@@ -231,6 +231,12 @@ class FeatureMaskExtractor(BaseFeaturesExtractor):
     def __init__(self, observation_space: Space, features_dim: int, device: torch.device):
         super().__init__(observation_space, features_dim)
         self.extractor = CustomTransformerExtractor(input_dim = TOKEN_LENGTH).to(device)
+        # # try a simple extractor
+        # self.extractor = nn.Sequential(
+        #     nn.Linear(OBS_LENGTH, TRANSFORMER_FEATURE_SIZE),
+        #     nn.ReLU(),
+        #     nn.Linear(TRANSFORMER_FEATURE_SIZE, TRANSFORMER_FEATURE_SIZE),
+        # )
         self.device = device
     
     def forward(self, x):
@@ -365,10 +371,16 @@ if __name__ == "__main__":
     # create dummy input of a tictactoe position
     import torch
     import gymnasium as gym
+    # obs = [
+    #     [1,0, 0,0, 0,1, 0,0, 1,0, 0,0, 1,0, 0,0, 0,1,
+    #         0,1,0,1,0,1,0,1,0],
+    #     [0,1, 0,0, 0,1, 0,0, 1,0, 0,0, 0,0, 0,0, 0,1,
+    #         0,1,0,1,0,1,1,1,0],
+    # ]
     obs = [
-        [1,0, 0,0, 0,1, 0,0, 1,0, 0,0, 1,0, 0,0, 0,1,
-            0,1,0,1,0,1,0,1,0],
-        [0,1, 0,0, 0,1, 0,0, 1,0, 0,0, 0,0, 0,0, 0,1,
+        [1,0,-1, 0,1,0, 1,0,-1,
+         0,1,0,1,0,1,0,1,0],
+        [-1,0,-1, 0,1,0, 0,0,-1,
             0,1,0,1,0,1,1,1,0],
     ]
     obs = torch.tensor(obs, dtype=torch.float32)
