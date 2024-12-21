@@ -2,7 +2,6 @@ from gymnasium import Space
 import torch
 import torch.nn as nn
 from torch.distributions.utils import logits_to_probs
-from torch.nn import TransformerEncoder, TransformerEncoderLayer
 from stable_baselines3.common.policies import ActorCriticPolicy
 from stable_baselines3.common.distributions import CategoricalDistribution
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
@@ -13,13 +12,13 @@ OBS_LENGTH = 18
 TOKEN_LENGTH = 2
 ACTIONS = 9
 
-TRANSFORMER_FEATURE_SIZE = 256
-TRANSFORMER_FF_DIM = 256
+TRANSFORMER_FEATURE_SIZE = 64
+TRANSFORMER_FF_DIM = 128
 TRANSFORMER_NHEAD = 8
-TRANSFORMER_NUM_LAYERS = 8
+TRANSFORMER_NUM_LAYERS = 3
 
-POLICY_FEATURE_SIZE = 64
-VALUE_FEATURE_SIZE = 64
+POLICY_FEATURE_SIZE = 16
+VALUE_FEATURE_SIZE = 16
 
 COMPUTE_DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -43,6 +42,22 @@ class RelativePosition(nn.Module):
         embeddings = self.embeddings_table[final_mat].to(COMPUTE_DEVICE)
 
         return embeddings
+    
+
+class RotaryPositionalEmbedding(nn.Module):
+    def __init__(self, d_model, max_len=18):
+        super().__init__()
+        self.d_model = d_model
+        self.max_len = max_len
+        self.inv_freq = 1. / (10000 ** (torch.arange(0, d_model, 2).float() / d_model))
+        self.inv_freq = self.inv_freq.to(COMPUTE_DEVICE)
+
+    def forward(self, x):
+        sinusoid_inp = torch.einsum('i , j -> i j', torch.arange(x.shape[1]).float(), self.inv_freq)
+        pos_emb = torch.cat((torch.sin(sinusoid_inp), torch.cos(sinusoid_inp)), dim=-1)
+        
+        return pos_emb
+
 
 class MultiHeadAttentionLayer(nn.Module):
     def __init__(self, hid_dim, n_heads, dropout, device):
@@ -55,9 +70,6 @@ class MultiHeadAttentionLayer(nn.Module):
         self.head_dim = hid_dim // n_heads
         self.max_relative_position = 2
 
-        self.relative_position_k = RelativePosition(self.head_dim, self.max_relative_position)
-        self.relative_position_v = RelativePosition(self.head_dim, self.max_relative_position)
-
         self.fc_q = nn.Linear(hid_dim, hid_dim)
         self.fc_k = nn.Linear(hid_dim, hid_dim)
         self.fc_v = nn.Linear(hid_dim, hid_dim)
@@ -68,28 +80,41 @@ class MultiHeadAttentionLayer(nn.Module):
         
         self.scale = torch.sqrt(torch.FloatTensor([self.head_dim])).to(device)
         
+        self.rotary_pos_emb = RotaryPositionalEmbedding(hid_dim)
+
+    def apply_rotary_pos_emb(self, x, pos_emb):
+        half_dimension = x.shape[-1] // 2
+        x1, x2 = x[..., :half_dimension], x[..., half_dimension:]
+        pos_emb1, pos_emb2 = pos_emb[..., :half_dimension], pos_emb[..., half_dimension:]
+        return torch.cat((x1 * pos_emb1.cos() + x2 * pos_emb1.sin(), x2 * pos_emb2.cos() - x1 * pos_emb2.sin()), dim=-1)
+
     def forward(self, query, key, value, mask = None):
         #query = [batch size, query len, hid dim]
         #key = [batch size, key len, hid dim]
         #value = [batch size, value len, hid dim]
         batch_size = query.shape[0]
-        len_k = key.shape[1]
-        len_q = query.shape[1]
-        len_v = value.shape[1]
 
         query = self.fc_q(query)
         key = self.fc_k(key)
         value = self.fc_v(value)
 
+        pos_emb = self.rotary_pos_emb(query)
+
+        query = self.apply_rotary_pos_emb(query, pos_emb)
+        key = self.apply_rotary_pos_emb(key, pos_emb)
+        value = self.apply_rotary_pos_emb(value, pos_emb)
+
+        #query = [batch size, query len, hid dim]
+        #key = [batch size, key len, hid dim]
+        #value = [batch size, value len, hid dim]
+
         r_q1 = query.view(batch_size, -1, self.n_heads, self.head_dim).permute(0, 2, 1, 3)
         r_k1 = key.view(batch_size, -1, self.n_heads, self.head_dim).permute(0, 2, 1, 3)
-        attn1 = torch.matmul(r_q1, r_k1.permute(0, 1, 3, 2)) 
+        attn = torch.matmul(r_q1, r_k1.permute(0, 1, 3, 2)) / self.scale
 
-        r_q2 = query.permute(1, 0, 2).contiguous().view(len_q, batch_size*self.n_heads, self.head_dim)
-        r_k2 = self.relative_position_k(len_q, len_k)
-        attn2 = torch.matmul(r_q2, r_k2.transpose(1, 2)).transpose(0, 1)
-        attn2 = attn2.contiguous().view(batch_size, self.n_heads, len_q, len_k)
-        attn = (attn1 + attn2) / self.scale
+        #r_q1 = [batch size, n heads, query len, head dim]
+        #r_k1 = [batch size, n heads, key len, head dim]
+        #attn = [batch size, n heads, query len, key len]
 
         if mask is not None:
             attn = attn.masked_fill(mask == 0, -1e10)
@@ -98,14 +123,9 @@ class MultiHeadAttentionLayer(nn.Module):
 
         #attn = [batch size, n heads, query len, key len]
         r_v1 = value.view(batch_size, -1, self.n_heads, self.head_dim).permute(0, 2, 1, 3)
-        weight1 = torch.matmul(attn, r_v1)
-        r_v2 = self.relative_position_v(len_q, len_v)
-        weight2 = attn.permute(2, 0, 1, 3).contiguous().view(len_q, batch_size*self.n_heads, len_k)
-        weight2 = torch.matmul(weight2, r_v2)
-        weight2 = weight2.transpose(0, 1).contiguous().view(batch_size, self.n_heads, len_q, self.head_dim)
-
-        x = weight1 + weight2
+        x = torch.matmul(attn, r_v1)
         
+        #r_v1 = [batch size, n heads, value len, head dim]
         #x = [batch size, n heads, query len, head dim]
         
         x = x.permute(0, 2, 1, 3).contiguous()
@@ -118,12 +138,12 @@ class MultiHeadAttentionLayer(nn.Module):
         
         x = self.fc_o(x)
         
-        #x = [batch size, query len, hid dim]-
+        #x = [batch size, query len, hid dim]
         
         return x
 
 
-class MyTransformerEncoder(nn.Module):
+class MyTransformerEncoderLayer(nn.Module):
     def __init__(self, hid_dim, n_heads, pf_dim, dropout, device):
         super().__init__()
         
@@ -180,7 +200,7 @@ class CustomTransformerExtractor(nn.Module):
     def __init__(self, input_dim) -> None:
         super().__init__()
         self.embedding = nn.Linear(input_dim, TRANSFORMER_FEATURE_SIZE)
-        self.layers = nn.ModuleList([MyTransformerEncoder(TRANSFORMER_FEATURE_SIZE, TRANSFORMER_NHEAD, TRANSFORMER_FF_DIM, 0.1, COMPUTE_DEVICE) for _ in range(TRANSFORMER_NUM_LAYERS)])
+        self.layers = nn.ModuleList([MyTransformerEncoderLayer(TRANSFORMER_FEATURE_SIZE, TRANSFORMER_NHEAD, TRANSFORMER_FF_DIM, 0.1, COMPUTE_DEVICE) for _ in range(TRANSFORMER_NUM_LAYERS)])
         # self.fc = nn.Linear(TRANSFORMER_FEATURE_SIZE, TRANSFORMER_FEATURE_SIZE)
         # self.pooling = nn.AdaptiveAvgPool1d(1)
 
@@ -231,12 +251,6 @@ class FeatureMaskExtractor(BaseFeaturesExtractor):
     def __init__(self, observation_space: Space, features_dim: int, device: torch.device):
         super().__init__(observation_space, features_dim)
         self.extractor = CustomTransformerExtractor(input_dim = TOKEN_LENGTH).to(device)
-        # # try a simple extractor
-        # self.extractor = nn.Sequential(
-        #     nn.Linear(OBS_LENGTH, TRANSFORMER_FEATURE_SIZE),
-        #     nn.ReLU(),
-        #     nn.Linear(TRANSFORMER_FEATURE_SIZE, TRANSFORMER_FEATURE_SIZE),
-        # )
         self.device = device
     
     def forward(self, x):
@@ -371,16 +385,10 @@ if __name__ == "__main__":
     # create dummy input of a tictactoe position
     import torch
     import gymnasium as gym
-    # obs = [
-    #     [1,0, 0,0, 0,1, 0,0, 1,0, 0,0, 1,0, 0,0, 0,1,
-    #         0,1,0,1,0,1,0,1,0],
-    #     [0,1, 0,0, 0,1, 0,0, 1,0, 0,0, 0,0, 0,0, 0,1,
-    #         0,1,0,1,0,1,1,1,0],
-    # ]
     obs = [
-        [1,0,-1, 0,1,0, 1,0,-1,
-         0,1,0,1,0,1,0,1,0],
-        [-1,0,-1, 0,1,0, 0,0,-1,
+        [1,0, 0,0, 0,1, 0,0, 1,0, 0,0, 1,0, 0,0, 0,1,
+            0,1,0,1,0,1,0,1,0],
+        [0,1, 0,0, 0,1, 0,0, 1,0, 0,0, 0,0, 0,0, 0,1,
             0,1,0,1,0,1,1,1,0],
     ]
     obs = torch.tensor(obs, dtype=torch.float32)

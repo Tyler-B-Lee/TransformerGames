@@ -28,9 +28,12 @@ def selfplay_wrapper(env):
 
                 if self.opponent_type == 'random':
                     start = 0
-                    end = len(self.opponent_models) - 1
+                    end = len(self.opponent_models)
                     i = random.randint(start, end)
-                    self.opponent_agent = Agent('ppo_opponent', self.opponent_models[i]) 
+                    if i == end:
+                        self.opponent_agent = Agent('random')
+                    else:
+                        self.opponent_agent = Agent('ppo_opponent', self.opponent_models[i]) 
 
                 elif self.opponent_type == 'best':
                     self.opponent_agent = Agent('ppo_opponent', self.opponent_models[-1])  
@@ -41,9 +44,12 @@ def selfplay_wrapper(env):
                         self.opponent_agent = Agent('ppo_opponent', self.opponent_models[-1])  
                     else:
                         start = 0
-                        end = len(self.opponent_models) - 1
+                        end = len(self.opponent_models)
                         i = random.randint(start, end)
-                        self.opponent_agent = Agent('ppo_opponent', self.opponent_models[i])  
+                        if i == end:
+                            self.opponent_agent = Agent('random')
+                        else:
+                            self.opponent_agent = Agent('ppo_opponent', self.opponent_models[i])  
 
                 elif self.opponent_type == 'base':
                     self.opponent_agent = Agent('base', self.opponent_models[0])  
