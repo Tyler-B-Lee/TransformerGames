@@ -5,6 +5,9 @@ def get_environment(env_name):
         if env_name in ('tictactoe'):
             from environments.tictactoe_env import TicTacToeEnv
             return TicTacToeEnv
+        elif env_name in ('shobu'):
+            from environments.shobu_env import ShobuEnv
+            return ShobuEnv
         else:
             raise Exception(f'No environment found for {env_name}')
     except SyntaxError as e:
@@ -18,6 +21,9 @@ def get_network_arch(env_name):
     if env_name in ('tictactoe'):
         from models.tictactoe_model import TicTacToePolicy
         return TicTacToePolicy
+    elif env_name in ('shobu'):
+        from models.shobu_model import ShobuPolicy
+        return ShobuPolicy
     else:
         raise Exception(f'No model architectures found for {env_name}')
 
